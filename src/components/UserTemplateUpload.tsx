@@ -6,6 +6,7 @@ import { createSubmitDebounce } from '@/utils/debounceThrottle';
 import Preview from './Preview';
 import { parseOverwatchCode } from '@/utils/overwatchCodeParser';
 import { loadTexturesWithCache } from '@/utils/textureCache';
+import { countTexturesInCode, validateOverwatchCodeLimits } from '@/utils/validation';
 
 interface UserTemplateUploadProps {
   onUploadSuccess?: () => void;
@@ -224,6 +225,13 @@ const UserTemplateUpload: React.FC<UserTemplateUploadProps> = ({
       return;
     }
 
+    // 游戏限制验证（强制）
+    const validation = validateOverwatchCodeLimits(formData.overwatchCode);
+    if (!validation.isValid) {
+      showToast(`无法上传：${validation.errors.join('，')}`, 'error');
+      return;
+    }
+
     // 防止重复提交
     if (isSubmitting) {
       showToast('正在提交中，请稍候...', 'warning');
@@ -324,6 +332,7 @@ const UserTemplateUpload: React.FC<UserTemplateUploadProps> = ({
                         <ul className="text-xs text-yellow-200 space-y-0.5">
                           <li>• 模板名称限制30字符，描述限制100字符</li>
                           <li>• 守望先锋代码限制300字符</li>
+                          <li>• <span className="text-red-300 font-semibold">游戏限制：最多165字符和4个纹理</span></li>
                           <li>• 1小时内最多允许2次上传</li>
                           <li>• 禁止上传侵权、违法或暴力血腥内容</li>
                           <li>• 不得包含第三方广告或商业推广信息</li>
@@ -427,19 +436,46 @@ const UserTemplateUpload: React.FC<UserTemplateUploadProps> = ({
                         placeholder="请输入守望先锋代码"
                         required
                       />
-                      <div className="flex justify-between items-center mt-1">
-                        <div className={`text-xs ${
-                          formData.overwatchCode.length > MAX_CHARACTERS * 0.9 
-                            ? 'text-red-400' 
-                            : formData.overwatchCode.length > MAX_CHARACTERS * 0.8 
-                            ? 'text-yellow-400' 
-                            : 'text-gray-500'
-                        }`}>
-                          {formData.overwatchCode.length}/{MAX_CHARACTERS} 字符
+                      <div className="mt-1 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-4">
+                            <div className={`text-xs ${
+                              formData.overwatchCode.length > 165 
+                                ? 'text-red-400' 
+                                : formData.overwatchCode.length > 132 
+                                ? 'text-yellow-400' 
+                                : 'text-gray-500'
+                            }`}>
+                              {formData.overwatchCode.length}/165 字符（游戏限制）
+                            </div>
+                            <div className={`text-xs ${
+                              countTexturesInCode(formData.overwatchCode) > 4 
+                                ? 'text-red-400' 
+                                : countTexturesInCode(formData.overwatchCode) > 3 
+                                ? 'text-yellow-400' 
+                                : 'text-gray-500'
+                            }`}>
+                              {countTexturesInCode(formData.overwatchCode)}/4 纹理（游戏限制）
+                            </div>
+                          </div>
+                          <div className={`text-xs ${
+                            formData.overwatchCode.length > MAX_CHARACTERS * 0.9 
+                              ? 'text-red-400' 
+                              : formData.overwatchCode.length > MAX_CHARACTERS * 0.8 
+                              ? 'text-yellow-400' 
+                              : 'text-gray-500'
+                          }`}>
+                            {formData.overwatchCode.length}/{MAX_CHARACTERS} 字符（上传限制）
+                          </div>
                         </div>
+                        {(formData.overwatchCode.length > 165 || countTexturesInCode(formData.overwatchCode) > 4) && (
+                          <div className="text-xs text-red-400">
+                            ⚠️ 超出游戏限制，无法上传到社区模板
+                          </div>
+                        )}
                         {formData.overwatchCode.length >= MAX_CHARACTERS && (
                           <div className="text-xs text-red-400">
-                            已达到字符上限
+                            已达到上传字符上限
                           </div>
                         )}
                       </div>

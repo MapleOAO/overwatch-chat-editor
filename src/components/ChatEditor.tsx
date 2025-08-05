@@ -489,15 +489,16 @@ const ChatEditor: React.FC = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* 移动端和桌面端布局 */}
+        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 lg:gap-8">
           {/* 左侧：输入区域 */}
-          <div className="space-y-8 h-full">
+          <div className="order-2 lg:order-1 space-y-4 lg:space-y-8 h-full">
             {/* 选项卡 */}
-            <div className="bg-gray-900/80 backdrop-blur-sm border border-orange-500/20 rounded-xl p-6 h-full flex flex-col">
-              <div className="flex border-b border-gray-700/50 mb-6">
+            <div className="bg-gray-900/80 backdrop-blur-sm border border-orange-500/20 rounded-xl p-3 lg:p-6 h-full flex flex-col">
+              <div className="flex border-b border-gray-700/50 mb-3 lg:mb-6 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab('template')}
-                  className={`px-6 py-3 text-sm font-medium transition-all duration-200 border-b-2 ${
+                  className={`px-3 lg:px-6 py-2 lg:py-3 text-xs lg:text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
                     activeTab === 'template'
                       ? 'border-orange-500 text-orange-400 bg-orange-500/10'
                       : 'border-transparent text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
@@ -507,7 +508,7 @@ const ChatEditor: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('texture')}
-                  className={`px-6 py-3 text-sm font-medium transition-all duration-200 border-b-2 ${
+                  className={`px-3 lg:px-6 py-2 lg:py-3 text-xs lg:text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
                     activeTab === 'texture'
                       ? 'border-orange-500 text-orange-400 bg-orange-500/10'
                       : 'border-transparent text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
@@ -517,7 +518,7 @@ const ChatEditor: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('text')}
-                  className={`px-6 py-3 text-sm font-medium transition-all duration-200 border-b-2 ${
+                  className={`px-3 lg:px-6 py-2 lg:py-3 text-xs lg:text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
                     activeTab === 'text'
                       ? 'border-orange-500 text-orange-400 bg-orange-500/10'
                       : 'border-transparent text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
@@ -547,7 +548,7 @@ const ChatEditor: React.FC = () => {
           </div>
 
           {/* 右侧：预览和代码生成 */}
-          <div className="space-y-8 h-full flex flex-col">
+          <div className="order-1 lg:order-2 space-y-4 lg:space-y-8 h-full flex flex-col">
             <div className="flex-1">
               <Preview 
                 elements={elements}

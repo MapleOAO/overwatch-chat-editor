@@ -68,7 +68,7 @@ const TextureSelector: React.FC<TextureSelectorProps> = ({ onTextureSelect, text
   const [jumpToPage, setJumpToPage] = useState('');
   const [showContributionForm, setShowContributionForm] = useState(false);
   
-  const itemsPerPage = 40; // 8列 × 5行 = 40个项目，增加每页显示数量
+  const itemsPerPage = 30; // 响应式布局：移动端3列×10行=30，PC端8列×4行=32，取平衡值30
   const totalPages = Math.ceil(filteredTextures.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentTextures = filteredTextures.slice(startIndex, startIndex + itemsPerPage);
@@ -184,21 +184,21 @@ const TextureSelector: React.FC<TextureSelectorProps> = ({ onTextureSelect, text
       </div>
 
       {/* 纹理网格 */}
-      <div className="grid grid-cols-8 gap-2 max-h-[500px] overflow-y-auto custom-scrollbar">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-[500px] overflow-y-auto custom-scrollbar">
         {currentTextures.map((texture) => (
           <button
             key={texture.id}
             onClick={() => handleTextureClick(texture.id)}
-            className="p-2 bg-gray-700/30 border border-gray-600/50 rounded-lg hover:border-orange-500/50 hover:bg-orange-500/10 transition-all duration-200 group transform hover:scale-105 flex flex-col items-center min-h-[100px] break-all"
+            className="p-2 bg-gray-700/30 border border-gray-600/50 rounded-lg hover:border-orange-500/50 hover:bg-orange-500/10 transition-all duration-200 group transform hover:scale-105 flex flex-col items-center min-h-[100px] sm:min-h-[110px] md:min-h-[100px] break-all"
             title={texture.name}
           >
-            <div className="w-10 h-10 mx-auto mb-1 bg-gray-600/30 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 sm:w-10 sm:h-10 md:w-10 md:h-10 mx-auto mb-1 bg-gray-600/30 rounded-lg flex items-center justify-center flex-shrink-0">
               <Image
                 src={texture.imagePath}
                 alt={texture.name}
-                width={40}
-                height={40}
-                className="object-contain rounded"
+                width={48}
+                height={48}
+                className="object-contain rounded w-full h-full"
               />
             </div>
             <div className="text-xs text-gray-300 group-hover:text-orange-300 transition-colors text-center leading-tight px-1 overflow-hidden">

@@ -22,6 +22,44 @@ const createStringSchema = (maxLength: number, fieldName: string) => {
 };
 
 /**
+ * 计算守望先锋代码中的纹理数量
+ */
+export const countTexturesInCode = (code: string): number => {
+  const texturePattern = /<TXC[0-9A-Fa-f]+>/g;
+  const matches = code.match(texturePattern);
+  return matches ? matches.length : 0;
+};
+
+/**
+ * 验证守望先锋代码是否符合游戏限制
+ */
+export const validateOverwatchCodeLimits = (code: string): {
+  isValid: boolean;
+  characterCount: number;
+  textureCount: number;
+  errors: string[];
+} => {
+  const characterCount = code.length;
+  const textureCount = countTexturesInCode(code);
+  const errors: string[] = [];
+  
+  if (characterCount > 165) {
+    errors.push(`字符数超出限制（${characterCount}/165）`);
+  }
+  
+  if (textureCount > 4) {
+    errors.push(`纹理数量超出限制（${textureCount}/4）`);
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    characterCount,
+    textureCount,
+    errors
+  };
+};
+
+/**
  * Overwatch代码验证（允许更多字符，因为是代码内容）
  */
 const createOverwatchCodeSchema = (maxLength: number) => {
@@ -34,6 +72,16 @@ const createOverwatchCodeSchema = (maxLength: number) => {
     .refine(
       (val) => !/<script[^>]*>.*?<\/script>/gi.test(val),
       'Overwatch代码包含不安全的脚本标签'
+    )
+    // 添加游戏限制验证
+    .refine(
+      (val) => {
+        const validation = validateOverwatchCodeLimits(val);
+        return validation.isValid;
+      },
+      {
+        message: '代码不符合游戏限制要求'
+      }
     );
 };
 
