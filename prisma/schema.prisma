@@ -178,3 +178,12 @@ model HeroResource {
   
   @@map("hero_resources")
 }
+
+model IncenseRecord {
+  id        String   @id @default(cuid())
+  offering  String   // 贡品类型
+  userIp    String   // 用户IP地址
+  createdAt DateTime @default(now())
+  
+  @@map("incense_records")
+}

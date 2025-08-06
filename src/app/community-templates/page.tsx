@@ -53,6 +53,12 @@ interface TemplateCategory {
 
 const CommunityTemplatesPage: React.FC = () => {
   const router = useRouter();
+  
+  // 强制跳转到纪念页面
+  useEffect(() => {
+    router.push('/memorial');
+  }, [router]);
+  
   const [templates, setTemplates] = useState<UserTemplate[]>([]);
   const [totalTemplates, setTotalTemplates] = useState(0);
   const [loading, setLoading] = useState(false);
