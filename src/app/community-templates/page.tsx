@@ -54,10 +54,9 @@ interface TemplateCategory {
 const CommunityTemplatesPage: React.FC = () => {
   const router = useRouter();
   
-  // 强制跳转到纪念页面
-  useEffect(() => {
+  const handleGoToMemorial = () => {
     router.push('/memorial');
-  }, [router]);
+  };
   
   const [templates, setTemplates] = useState<UserTemplate[]>([]);
   const [totalTemplates, setTotalTemplates] = useState(0);
@@ -356,6 +355,27 @@ const CommunityTemplatesPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      {/* 停止服务通知横幅 */}
+      <div className="bg-red-500/20 border-b-2 border-red-500/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 text-center sm:text-left">
+              <div className="text-2xl">⚠️</div>
+              <div>
+                <h2 className="text-lg font-bold text-red-400">服务已停止</h2>
+                <p className="text-sm text-gray-300">社区模板功能已于 2025年8月6日 停止服务</p>
+              </div>
+            </div>
+            <button
+              onClick={handleGoToMemorial}
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 text-sm"
+            >
+              前往纪念页面 →
+            </button>
+          </div>
+        </div>
+      </div>
+      
       {/* 页面头部 */}
       <div className="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-6">
