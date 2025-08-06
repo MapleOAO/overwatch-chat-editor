@@ -11,8 +11,11 @@ import {
   TrophyIcon,
   TagIcon,
   CurrencyDollarIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  HomeIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/solid';
+import { AppreciationButton } from '@/components/AppreciationModal';
 
 // 数字动画组件
 const AnimatedNumber = ({ value, duration = 2000 }: { value: number; duration?: number }) => {
@@ -126,7 +129,6 @@ const DanmakuItem = ({ template, delay, randomSeed }: { template: any; delay: nu
 // 弹幕容器组件
 const DanmakuContainer = ({ enabled = true }: { enabled?: boolean }) => {
   const [templates, setTemplates] = useState<any[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [activeDanmaku, setActiveDanmaku] = useState<any[]>([]);
 
   // 获取模板数据
@@ -153,16 +155,17 @@ const DanmakuContainer = ({ enabled = true }: { enabled?: boolean }) => {
     if (!enabled || templates.length === 0) return;
 
     const interval = setInterval(() => {
-      const template = templates[currentIndex % templates.length];
+      // 随机选择一个模板
+      const randomIndex = Math.floor(Math.random() * templates.length);
+      const template = templates[randomIndex];
       const newDanmaku = {
-        id: `${template.id}-${Date.now()}`,
+        id: `${template.id}-${Date.now()}-${Math.random()}`,
         template,
         delay: 0,
         randomSeed: Math.random()
       };
 
       setActiveDanmaku(prev => [...prev, newDanmaku]);
-      setCurrentIndex(prev => prev + 1);
 
       // 清理过期的弹幕
       setTimeout(() => {
@@ -171,7 +174,7 @@ const DanmakuContainer = ({ enabled = true }: { enabled?: boolean }) => {
     }, 3000 + Math.random() * 2000); // 3-5秒间隔
 
     return () => clearInterval(interval);
-  }, [enabled, templates, currentIndex]);
+  }, [enabled, templates]);
 
   // 当弹幕被禁用时，清空所有活跃弹幕
   useEffect(() => {
@@ -210,33 +213,32 @@ export default function MemorialPage() {
     todayCount: 0,
     recentOfferings: [],
     projectStats: {
-      totalTemplates: 0,
-      totalUsers: 0,
-      totalLikes: 0
+      totalTemplates: 306,
+      totalUsers: 194756,
+      totalLikes: 6559
     }
   });
+
   const [selectedOffering, setSelectedOffering] = useState('');
   const [showOfferingModal, setShowOfferingModal] = useState(false);
   const [isOffering, setIsOffering] = useState(false);
   const [showIncenseAnimation, setShowIncenseAnimation] = useState(false);
 
-  // 加载真实统计数据
+  // 加载上香统计数据
   const loadStats = async () => {
     try {
       const incenseResponse = await fetch('/api/incense');
       
       if (incenseResponse.ok) {
         const incenseData = await incenseResponse.json();
-        setIncenseStats({
+        setIncenseStats(prevStats => ({
+          ...prevStats,
           totalCount: incenseData.totalCount || 0,
           todayCount: incenseData.todayCount || 0,
-          recentOfferings: incenseData.recentOfferings || [],
-          projectStats: incenseData.projectStats || {
-            totalTemplates: 0,
-            totalUsers: 0,
-            totalLikes: 0
-          }
-        });
+          recentOfferings: incenseData.recentOfferings || []
+        }));
+        
+
       } else {
         console.error('Failed to load incense stats');
       }
@@ -333,11 +335,96 @@ export default function MemorialPage() {
       {/* 浮动粒子效果 */}
       <FloatingParticles />
       
+      {/* 导航栏 */}
+      <div className="relative z-20 border-b border-gray-700/30 bg-gray-900/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4">
+          {/* 桌面端 - 所有按钮在一行 */}
+          <div className="hidden sm:flex items-center gap-2 justify-center">
+            <a 
+              href="/"
+              className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 hover:border-blue-400/30 transition-all duration-200 group"
+            >
+              <HomeIcon className="w-4 h-4 text-blue-400" />
+              <span className="text-white text-sm font-medium">聊天编辑器</span>
+            </a>
+            
+            <a 
+              href="/teammate-matching"
+              className="flex items-center gap-1.5 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 hover:border-green-400/30 transition-all duration-200 group"
+            >
+              <UserGroupIcon className="w-4 h-4 text-green-400" />
+              <span className="text-white text-sm font-medium">队友匹配</span>
+            </a>
+            
+            <a 
+              href="/overwatch-market"
+              className="flex items-center gap-1.5 px-3 py-2 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 hover:border-purple-400/30 transition-all duration-200 group"
+            >
+              <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              <span className="text-white text-sm font-medium">集卡市场</span>
+            </a>
+            
+            <a 
+              href="/community-templates"
+              className="flex items-center gap-1.5 px-3 py-2 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 hover:border-orange-400/30 transition-all duration-200 group"
+            >
+              <span className="text-sm">🎨</span>
+              <span className="text-white text-sm font-medium">社区模板</span>
+            </a>
+            
+            <AppreciationButton className="text-sm px-3 py-2" />
+          </div>
+          
+          {/* 移动端 - 所有按钮在一行，支持滚动 */}
+          <div className="flex sm:hidden gap-2 overflow-x-auto">
+            <a 
+              href="/"
+              className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-all duration-200 whitespace-nowrap"
+            >
+              <HomeIcon className="w-4 h-4 text-blue-400" />
+              <span className="text-white text-xs font-medium">编辑器</span>
+            </a>
+            
+            <a 
+              href="/teammate-matching"
+              className="flex items-center gap-1.5 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-all duration-200 whitespace-nowrap"
+            >
+              <UserGroupIcon className="w-4 h-4 text-green-400" />
+              <span className="text-white text-xs font-medium">队友</span>
+            </a>
+            
+            <a 
+              href="/overwatch-market"
+              className="flex items-center gap-1.5 px-3 py-2 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-all duration-200 whitespace-nowrap"
+            >
+              <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              <span className="text-white text-xs font-medium">集卡</span>
+            </a>
+            
+            <a 
+              href="/community-templates"
+              className="flex items-center gap-1.5 px-3 py-2 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-all duration-200 whitespace-nowrap"
+            >
+              <span className="text-sm">🎨</span>
+              <span className="text-white text-xs font-medium">模板</span>
+            </a>
+            
+            <AppreciationButton className="text-sm px-3 py-2 whitespace-nowrap" />
+          </div>
+        </div>
+      </div>
+      
+
+      
       {/* 弹幕容器 */}
       <DanmakuContainer enabled={danmakuEnabled} />
       
       {/* 弹幕控制按钮 */}
-      <div className="fixed top-4 right-4 z-30">
+      <div className="fixed top-20 right-4 z-30">
         <button
           onClick={() => setDanmakuEnabled(!danmakuEnabled)}
           className={`px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium transition-all duration-300 backdrop-blur-sm border text-sm md:text-base ${
@@ -394,21 +481,21 @@ export default function MemorialPage() {
         >
           <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-3 sm:p-4 md:p-6 text-center hover:bg-gray-800/70 transition-all duration-300 hover:scale-105">
             <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-orange-400 mb-1 sm:mb-2">
-              {loading ? '...' : <AnimatedNumber value={incenseStats.projectStats.totalTemplates} />}
+              <AnimatedNumber value={306} />
             </div>
             <div className="text-gray-300 text-xs sm:text-sm md:text-base">社区模板</div>
           </div>
           <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-3 sm:p-4 md:p-6 text-center hover:bg-gray-800/70 transition-all duration-300 hover:scale-105">
             <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-purple-400 mb-1 sm:mb-2">
-              {loading ? '...' : <AnimatedNumber value={incenseStats.projectStats.totalUsers} />}
+              <AnimatedNumber value={218566} />
             </div>
-            <div className="text-gray-300 text-xs sm:text-sm md:text-base">用户数量</div>
+            <div className="text-gray-300 text-xs sm:text-sm md:text-base">访客数量</div>
           </div>
           <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-3 sm:p-4 md:p-6 text-center hover:bg-gray-800/70 transition-all duration-300 hover:scale-105">
             <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-blue-400 mb-1 sm:mb-2">
-              {loading ? '...' : <AnimatedNumber value={incenseStats.projectStats.totalLikes} />}
+              <AnimatedNumber value={6559} />
             </div>
-            <div className="text-gray-300 text-xs sm:text-sm md:text-base">模板点赞</div>
+            <div className="text-gray-300 text-xs sm:text-sm md:text-base">点赞互动</div>
           </div>
           <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-3 sm:p-4 md:p-6 text-center hover:bg-gray-800/70 transition-all duration-300 hover:scale-105">
             <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-400 mb-1 sm:mb-2">
