@@ -94,64 +94,44 @@ export async function GET(request: Request) {
       take: 10
     });
 
-    // 4. 时间维度分析
-    // 获取最近30天的每日统计
+    // 4. 时间维度分析（优化查询，避免大量数据处理）
+    // 获取最近30天的每日统计 - 使用原生SQL聚合查询
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     const dailyStats: Record<string, number> = {};
-    for (let i = 0; i < 30; i++) {
-      const date = new Date(thirtyDaysAgo);
-      date.setDate(date.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
-      
-      const count = await prisma.cardExchange.count({
-        where: {
-          createdAt: {
-            gte: new Date(dateStr),
-            lt: new Date(new Date(dateStr).getTime() + 24 * 60 * 60 * 1000)
-          }
-        }
-      });
-      
-      dailyStats[dateStr] = count;
-    }
-
-    // 平均存活时间（从创建到被领取的平均时长，以小时为单位）
-    const claimedExchanges = await prisma.cardExchange.findMany({
-      where: {
-        status: 'claimed'
-      },
-      select: {
-        createdAt: true,
-        lastCheckedAt: true
-      }
-    });
-
-    let totalLifespanHours = 0;
-    claimedExchanges.forEach(exchange => {
-      if (exchange.lastCheckedAt) {
-        const lifespanMs = new Date(exchange.lastCheckedAt).getTime() - new Date(exchange.createdAt).getTime();
-        totalLifespanHours += lifespanMs / (1000 * 60 * 60);
-      }
-    });
     
-    const averageLifespan = claimedExchanges.length > 0 ? totalLifespanHours / claimedExchanges.length : 0;
+    // 使用原生SQL进行日期聚合，避免多次查询
+    const dailyStatsResult = await prisma.$queryRaw`
+      SELECT DATE(createdAt) as date, COUNT(*) as count 
+      FROM card_exchanges 
+      WHERE createdAt >= ${thirtyDaysAgo}
+      GROUP BY DATE(createdAt)
+      ORDER BY date
+    ` as Array<{date: Date, count: bigint}>;
+    
+    dailyStatsResult.forEach(row => {
+      const dateStr = row.date.toISOString().split('T')[0];
+      dailyStats[dateStr] = Number(row.count);
+    });
 
-    // 最快成交记录
-    let fastestExchange = 0;
-    if (claimedExchanges.length > 0) {
-      const fastestMs = Math.min(...claimedExchanges.map(exchange => {
-        if (exchange.lastCheckedAt) {
-          return new Date(exchange.lastCheckedAt).getTime() - new Date(exchange.createdAt).getTime();
-        }
-        return Infinity;
-      }).filter(ms => ms !== Infinity));
-      
-      if (fastestMs !== Infinity) {
-        fastestExchange = fastestMs / (1000 * 60 * 60);
-      }
-    }
+    // 平均存活时间（使用聚合查询优化）
+    const avgLifespanResult = await prisma.$queryRaw`
+      SELECT AVG(TIMESTAMPDIFF(HOUR, createdAt, lastCheckedAt)) as avgHours
+      FROM card_exchanges 
+      WHERE status = 'claimed' AND lastCheckedAt IS NOT NULL
+    ` as Array<{avgHours: number | null}>;
+    
+    const averageLifespanHours = Number(avgLifespanResult[0]?.avgHours) || 0;
+
+    // 最快成交记录（使用聚合查询优化）
+    const fastestResult = await prisma.$queryRaw`
+      SELECT MIN(TIMESTAMPDIFF(HOUR, createdAt, lastCheckedAt)) as fastestHours
+      FROM card_exchanges 
+      WHERE status = 'claimed' AND lastCheckedAt IS NOT NULL
+    ` as Array<{fastestHours: number | null}>;
+    
+    const fastestExchange = Number(fastestResult[0]?.fastestHours) || 0;
 
     // 最久活跃卡片
     const oldestActiveCard = await prisma.cardExchange.findFirst({
@@ -247,36 +227,44 @@ export async function GET(request: Request) {
         give: userExchanges.filter(ex => ex.actionType === 'give').length
       };
 
-      // 用户最受欢迎的卡片（最快被领取的）
-      const userClaimedExchanges = userExchanges.filter(ex => ex.status === 'claimed' && ex.lastCheckedAt);
+      // 用户最快交换（使用聚合查询优化）
+      const userFastestResult = await prisma.$queryRaw`
+        SELECT actionInitiatorCardId, MIN(TIMESTAMPDIFF(HOUR, createdAt, lastCheckedAt)) as fastestHours
+        FROM card_exchanges 
+        WHERE creatorIp = ${userIp} AND status = 'claimed' AND lastCheckedAt IS NOT NULL
+        GROUP BY actionInitiatorCardId
+        ORDER BY fastestHours ASC
+        LIMIT 1
+      ` as Array<{actionInitiatorCardId: number, fastestHours: number}>;
+      
       let fastestUserExchange = null;
-      if (userClaimedExchanges.length > 0) {
-        const fastest = userClaimedExchanges.reduce((prev, current) => {
-          const prevTime = new Date(prev.lastCheckedAt!).getTime() - new Date(prev.createdAt).getTime();
-          const currentTime = new Date(current.lastCheckedAt!).getTime() - new Date(current.createdAt).getTime();
-          return currentTime < prevTime ? current : prev;
-        });
+      if (userFastestResult.length > 0) {
         fastestUserExchange = {
-          cardId: fastest.actionInitiatorCardId,
-          timeToComplete: (new Date(fastest.lastCheckedAt!).getTime() - new Date(fastest.createdAt).getTime()) / (1000 * 60 * 60)
+          cardId: userFastestResult[0].actionInitiatorCardId,
+          timeToComplete: Number(userFastestResult[0].fastestHours) || 0
         };
       }
 
-      // 参与时长
+      // 参与时长（使用聚合查询优化）
+      const userTimeRangeResult = await prisma.$queryRaw`
+        SELECT MIN(createdAt) as firstDate, MAX(createdAt) as lastDate
+        FROM card_exchanges 
+        WHERE creatorIp = ${userIp}
+      ` as Array<{firstDate: Date | null, lastDate: Date | null}>;
+      
       let participationDays = 0;
       let userFirstExchange = null;
       let userLastExchange = null;
       
-      if (userExchanges.length > 0) {
-        userFirstExchange = userExchanges.reduce((earliest, current) => 
-          new Date(current.createdAt) < new Date(earliest.createdAt) ? current : earliest
-        );
-        userLastExchange = userExchanges.reduce((latest, current) => 
-          new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
-        );
+      if (userTimeRangeResult[0]?.firstDate && userTimeRangeResult[0]?.lastDate) {
+        const firstDate = userTimeRangeResult[0].firstDate;
+        const lastDate = userTimeRangeResult[0].lastDate;
+        
+        userFirstExchange = { createdAt: firstDate };
+        userLastExchange = { createdAt: lastDate };
         
         participationDays = userExchanges.length > 1 ? 
-          Math.ceil((new Date(userLastExchange.createdAt).getTime() - new Date(userFirstExchange.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+          Math.ceil((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / (1000 * 60 * 60 * 24)) : 0;
       }
 
       personalStats = {
@@ -319,7 +307,7 @@ export async function GET(request: Request) {
       },
       timeAnalysis: {
         dailyStats,
-        averageLifespan,
+        averageLifespan: averageLifespanHours, // 返回小时数，前端根据大小选择单位
         fastestExchange,
         oldestActiveCard: oldestActiveCardData
       },

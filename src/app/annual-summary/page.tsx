@@ -560,14 +560,24 @@ const AnnualSummaryPage: React.FC = () => {
             <StatCard
               title="成功交换"
               value={data.overview.successfulExchanges.toLocaleString()}
-              subtitle={`成功率 ${data.overview.successRate.toFixed(1)}%`}
+              subtitle={`成功率 ${(Number(data.overview.successRate) || 0).toFixed(1)}%`}
               icon={<StarIcon className="w-10 h-10" />}
               color="from-purple-500 via-purple-600 to-purple-800"
               delay={0.6}
             />
             <StatCard
               title="平均交换时长"
-              value={`${data.timeAnalysis.averageLifespan.toFixed(1)}天`}
+              value={(() => {
+                 const hours = Number(data.timeAnalysis.averageLifespan) || 0;
+                 if (hours < 1) {
+                   const minutes = hours * 60;
+                   return `${minutes.toFixed(0)}分钟`;
+                 } else if (hours < 24) {
+                   return `${hours.toFixed(1)}小时`;
+                 } else {
+                   return `${(hours / 24).toFixed(1)}天`;
+                 }
+               })()}
               subtitle="从发布到完成"
               icon={<ClockIcon className="w-10 h-10" />}
               color="from-orange-500 via-orange-600 to-orange-800"
@@ -889,15 +899,15 @@ const AnnualSummaryPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-3 bg-gray-700/30 rounded-lg">
                   <span className="text-gray-300">求卡占比</span>
-                  <span className="text-red-400 font-bold">{data.exchangeModes.askPercentage.toFixed(1)}%</span>
+                  <span className="text-red-400 font-bold">{(Number(data.exchangeModes.askPercentage) || 0).toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-gray-700/30 rounded-lg">
                   <span className="text-gray-300">换卡占比</span>
-                  <span className="text-blue-400 font-bold">{data.exchangeModes.exchangePercentage.toFixed(1)}%</span>
+                  <span className="text-blue-400 font-bold">{(Number(data.exchangeModes.exchangePercentage) || 0).toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-gray-700/30 rounded-lg">
                   <span className="text-gray-300">送卡占比</span>
-                  <span className="text-green-400 font-bold">{data.exchangeModes.givePercentage.toFixed(1)}%</span>
+                  <span className="text-green-400 font-bold">{(Number(data.exchangeModes.givePercentage) || 0).toFixed(1)}%</span>
                 </div>
               </div>
             </div>
@@ -1122,7 +1132,7 @@ const AnnualSummaryPage: React.FC = () => {
                   <ShieldCheckIcon className="w-6 h-6 text-purple-400" />
                   <div className="flex-1">
                     <div className="text-gray-300 text-sm mb-1">求助响应率</div>
-                    <div className="text-2xl font-bold text-purple-400">{data.communityIndex.askSuccessRate.toFixed(1)}%</div>
+                    <div className="text-2xl font-bold text-purple-400">{(Number(data.communityIndex.askSuccessRate) || 0).toFixed(1)}%</div>
                     <div className="text-sm text-gray-400">社区响应度</div>
                   </div>
                 </div>
@@ -1314,7 +1324,7 @@ const AnnualSummaryPage: React.FC = () => {
                       </div>
                       <div className="bg-cyan-700/30 p-3 sm:p-4 rounded-lg">
                         <div className="text-cyan-300 text-xs sm:text-sm mb-1">交换成功率</div>
-                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-blue-400">{'error' in searchResult ? '0' : (searchResult.successRate?.toFixed(1) || '0')}%</div>
+                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-blue-400">{'error' in searchResult ? '0' : ((Number(searchResult.successRate) || 0).toFixed(1))}%</div>
                       </div>
                       <div className="bg-cyan-700/30 p-3 sm:p-4 rounded-lg">
                         <div className="text-cyan-300 text-xs sm:text-sm mb-1">活跃天数</div>
@@ -1411,7 +1421,7 @@ const AnnualSummaryPage: React.FC = () => {
                                 {getCardRegion('error' in searchResult ? 0 : searchResult.fastestExchange?.cardId || 0)}
                               </div>
                               <div className="text-orange-400 font-bold">
-                                {'error' in searchResult ? '0' : (searchResult.fastestExchange?.timeToComplete.toFixed(1) || '0')} 小时完成
+                                {'error' in searchResult ? '0' : ((Number(searchResult.fastestExchange?.timeToComplete) || 0).toFixed(1))} 小时完成
                               </div>
                             </div>
                           </div>
@@ -1512,7 +1522,7 @@ const AnnualSummaryPage: React.FC = () => {
               </div>
               <div className="bg-cyan-700/30 p-3 sm:p-4 rounded-lg">
                 <div className="text-cyan-300 text-xs sm:text-sm mb-1">交换成功率</div>
-                <div className="text-xl sm:text-2xl font-bold text-blue-400">{data.personalStats.successRate.toFixed(1)}%</div>
+                <div className="text-xl sm:text-2xl font-bold text-blue-400">{(Number(data.personalStats.successRate) || 0).toFixed(1)}%</div>
               </div>
               <div className="bg-cyan-700/30 p-3 sm:p-4 rounded-lg">
                 <div className="text-cyan-300 text-xs sm:text-sm mb-1">参与天数</div>
@@ -1558,7 +1568,7 @@ const AnnualSummaryPage: React.FC = () => {
                       <div className="text-white font-bold text-sm sm:text-lg truncate">{getCardName(data.personalStats.fastestExchange.cardId)}</div>
                       <div className="text-cyan-300 text-xs sm:text-sm">{getCardRegion(data.personalStats.fastestExchange.cardId)}</div>
                       <div className="text-green-400 text-xs sm:text-sm mt-1">
-                        最快成交: {data.personalStats.fastestExchange.timeToComplete.toFixed(1)} 小时
+                        最快成交: {(Number(data.personalStats.fastestExchange.timeToComplete) || 0).toFixed(1)} 小时
                       </div>
                     </div>
                   </div>
