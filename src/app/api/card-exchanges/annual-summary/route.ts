@@ -176,14 +176,7 @@ export async function GET(request: Request) {
       };
     }
 
-    // 5. 赛区分布统计（修正卡片ID映射）
-    const allCards = await prisma.cardExchange.findMany({
-      select: {
-        actionInitiatorCardId: true,
-        actionAcceptCardId: true
-      }
-    });
-
+    // 5. 赛区分布统计（优化查询，避免内存溢出）
     const regionStats = {
       CN: 0,
       APAC: 0,
@@ -191,29 +184,26 @@ export async function GET(request: Request) {
       NA: 0
     };
 
-    allCards.forEach(card => {
-      // 统计发起卡片的赛区（修正映射）
-      if (card.actionInitiatorCardId >= 1 && card.actionInitiatorCardId <= 9) {
-        regionStats.CN++;
-      } else if (card.actionInitiatorCardId >= 10 && card.actionInitiatorCardId <= 15) {
-        regionStats.NA++;
-      } else if (card.actionInitiatorCardId >= 16 && card.actionInitiatorCardId <= 21) {
-        regionStats.APAC++;
-      } else if (card.actionInitiatorCardId >= 22 && card.actionInitiatorCardId <= 27) {
-        regionStats.EMEA++;
-      }
+    // 分别统计发起卡片的赛区分布
+    const initiatorRegionCounts = await Promise.all([
+      prisma.cardExchange.count({ where: { actionInitiatorCardId: { gte: 1, lte: 9 } } }),
+      prisma.cardExchange.count({ where: { actionInitiatorCardId: { gte: 10, lte: 15 } } }),
+      prisma.cardExchange.count({ where: { actionInitiatorCardId: { gte: 16, lte: 21 } } }),
+      prisma.cardExchange.count({ where: { actionInitiatorCardId: { gte: 22, lte: 27 } } })
+    ]);
 
-      // 统计接受卡片的赛区（修正映射）
-      if (card.actionAcceptCardId >= 1 && card.actionAcceptCardId <= 9) {
-        regionStats.CN++;
-      } else if (card.actionAcceptCardId >= 10 && card.actionAcceptCardId <= 15) {
-        regionStats.NA++;
-      } else if (card.actionAcceptCardId >= 16 && card.actionAcceptCardId <= 21) {
-        regionStats.APAC++;
-      } else if (card.actionAcceptCardId >= 22 && card.actionAcceptCardId <= 27) {
-        regionStats.EMEA++;
-      }
-    });
+    // 分别统计接受卡片的赛区分布
+    const acceptorRegionCounts = await Promise.all([
+      prisma.cardExchange.count({ where: { actionAcceptCardId: { gte: 1, lte: 9 } } }),
+      prisma.cardExchange.count({ where: { actionAcceptCardId: { gte: 10, lte: 15 } } }),
+      prisma.cardExchange.count({ where: { actionAcceptCardId: { gte: 16, lte: 21 } } }),
+      prisma.cardExchange.count({ where: { actionAcceptCardId: { gte: 22, lte: 27 } } })
+    ]);
+
+    regionStats.CN = initiatorRegionCounts[0] + acceptorRegionCounts[0];
+    regionStats.NA = initiatorRegionCounts[1] + acceptorRegionCounts[1];
+    regionStats.APAC = initiatorRegionCounts[2] + acceptorRegionCounts[2];
+    regionStats.EMEA = initiatorRegionCounts[3] + acceptorRegionCounts[3];
 
     // 6. 社区互助指数
     const communityIndex = {
@@ -242,7 +232,8 @@ export async function GET(request: Request) {
           status: true,
           createdAt: true,
           lastCheckedAt: true
-        }
+        },
+        take: 1000 // 限制最多1000条记录，防止内存溢出
       });
 
       const userTotalExchanges = userExchanges.length;
