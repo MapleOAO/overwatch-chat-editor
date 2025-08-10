@@ -12,7 +12,7 @@ import AddExchangeModal from '@/components/AddExchangeModal';
 
 import { AppreciationButton } from '@/components/AppreciationModal';
 import AdBanner from '@/components/AdBanner';
-import { PlusIcon, ArrowPathIcon, ExclamationTriangleIcon, CheckIcon, ArrowLeftIcon, ArrowRightIcon, SparklesIcon, HomeIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ArrowPathIcon, ExclamationTriangleIcon, CheckIcon, ArrowLeftIcon, ArrowRightIcon, SparklesIcon, HomeIcon, UserGroupIcon, XMarkIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 
 interface CardExchange {
   id: string;
@@ -51,6 +51,7 @@ export default function OverwatchMarketPage() {
   const [selectedWantCardId, setSelectedWantCardId] = useState<number | null>(null);
   const [selectedActionType, setSelectedActionType] = useState<string>('ask');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showEndModal, setShowEndModal] = useState(true);
   const { toast, showToast, hideToast } = useToast();
 
   // 加载卡片交换列表
@@ -518,6 +519,56 @@ export default function OverwatchMarketPage() {
          onSubmit={throttledSubmit}
          isSubmitting={submitting}
        />
+       
+      {/* 活动结束弹窗 */}
+      {showEndModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowEndModal(false)}>
+          <div className="relative bg-gradient-to-br from-gray-800 to-gray-900 p-6 sm:p-8 rounded-2xl max-w-md w-full border border-orange-500/30 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+           {/* 关闭按钮 */}
+           <button 
+             onClick={() => setShowEndModal(false)}
+             className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+           >
+             <XMarkIcon className="w-6 h-6" />
+           </button>
+           
+           <div className="text-center">
+              
+              {/* 图标 */}
+              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CalendarDaysIcon className="w-8 h-8 text-white" />
+              </div>
+              
+              {/* 标题 */}
+              <h3 className="text-2xl font-bold text-white mb-3">集卡活动已结束</h3>
+              
+              {/* 描述 */}
+              <p className="text-gray-300 mb-6 leading-relaxed">
+                感谢您参与守望先锋集卡活动！活动已圆满结束，快来查看精彩的活动总结吧！
+              </p>
+              
+              {/* 按钮组 */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  href="/annual-summary"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2"
+                  onClick={() => setShowEndModal(false)}
+                >
+                  <SparklesIcon className="w-5 h-5" />
+                  查看活动总结
+                </Link>
+                <button 
+                  onClick={() => setShowEndModal(false)}
+                  className="px-6 py-3 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  稍后查看
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+       
        <AdBanner />
     </div>
   );
