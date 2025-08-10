@@ -10,7 +10,6 @@ export async function GET(request: NextRequest) {
       by: ['actionInitiatorAccount'],
       where: {
         actionInitiatorAccount: {
-          not: null,
           not: ''
         }
       },
